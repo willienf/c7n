@@ -10,7 +10,7 @@ policies:
     actions:
       - type: tag
         key: c7n-guardrail-rds-mysql-without-storage-encryption
-        value: https://confluencecorp.ctsp.prod.cloud.ihf/x/fplXFw
+        value: https://baseline-url
 
 ## Valida a criptografia em transito ##
 
@@ -26,7 +26,7 @@ policies:
     actions:
       - type: tag
         key: c7n-guardrail-rds-mysql-without-transit-encryption
-        value: https://confluencecorp.ctsp.prod.cloud.ihf/x/fplXFw
+        value: https://baseline-url
 
 
 ## Acesso Público ##
@@ -40,7 +40,7 @@ policies:
     actions:
       - type: tag
         key: c7n-guardrail-rds-mysql-public-access
-        value: https://confluencecorp.ctsp.prod.cloud.ihf/x/fplXFw 
+        value: https://baseline-url 
 
 # Autenticacao por IAM #
 
@@ -53,7 +53,7 @@ policies:
     actions:
       - type: tag
         key: c7n-guardrail-rds-mysql-without-iam-auth-enabled
-        value: https://confluencecorp.ctsp.prod.cloud.ihf/x/fplXFw 
+        value: https://baseline-url 
 
 # Validar se rds tem multiAZ #
 
@@ -66,7 +66,7 @@ policies:
     actions:
       - type: tag
         key: c7n-guardrail-rds-mysql-without-multiAZ-enabled
-        value: https://confluencecorp.ctsp.prod.cloud.ihf/x/fplXFw 
+        value: https://baseline-url 
 
 # Validar se rds tem habilitado Auto Minor Version Upgrade #
 
@@ -79,7 +79,7 @@ policies:
     actions:
       - type: tag
         key: c7n-guardrail-rds-mysql-without-multiAZ-enabled
-        value: https://confluencecorp.ctsp.prod.cloud.ihf/x/fplXFw 
+        value: https://baseline-url 
         
 # Validar se rds foi configurado com usuarios tipo default #
 
@@ -96,7 +96,7 @@ policies:
     actions:
       - type: tag
         key: c7n-guardrail-rds-mysql-default-user-enabled
-        value: https://confluencecorp.ctsp.prod.cloud.ihf/x/fplXFw
+        value: https://baseline-url
 
 # Validar se foram habilitados logs #
 
@@ -113,4 +113,4 @@ policies:
     actions:
       - type: tag
         key: c7n-guardrail-rds-mysql-without-logs-enabled
-        value: https://confluencecorp.ctsp.prod.cloud.ihf/x/fplXFw
+        value: https://baseline-url
