@@ -1,0 +1,126 @@
+## Valida a criptografia de disco ##
+
+policies:
+  - name: rds-without-storage-encryption
+    resource: rds
+    comment: Validar se armazenamento esta criptografado
+    filters:
+     - Engine: mysql
+     - StorageEncrypted: false
+    actions:
+      - type: tag
+        key: c7n-guardrail-rds-mysql-without-storage-encryption
+        value: "true"
+
+## Valida a criptografia em transito ##
+
+policies:
+  - name: rds-without-transit-encryption
+    resource: rds
+    comment: Validar se armazenamento esta criptografado em transito
+    filters:
+     - Engine: mysql
+     - type: value
+       key: CACertificateIdentifier
+       value: absent
+    actions:
+      - type: tag
+        key: c7n-guardrail-rds-mysql-without-transit-encryption
+        value: "true"
+
+
+## Acesso Público ##
+
+  - name: rds-check-public-access
+    resource: rds
+    comment: Validar instancias RDS com acesso publico e aplicar tag.
+    filters:
+      - Engine: mysql
+      - PubliclyAccessible: true
+    actions:
+      - type: tag
+        key: c7n-guardrail-rds-mysql-public-access
+        value: "true" 
+
+# Autenticacao por IAM #
+
+  - name: rds-check-iam-auth-enabled
+    resource: rds
+    comment: Validar instancias RDS que nao tem ativada autenticação por IAM.
+    filters:
+      - Engine: mysql
+      - IAMDatabaseAuthenticationEnabled: false
+    actions:
+      - type: tag
+        key: c7n-guardrail-rds-mysql-without-iam-auth-enabled
+        value: "true" 
+
+# Validar se rds tem multiAZ #
+
+  - name: rds-check-multiAZ-enabled
+    resource: rds
+    comment: Validar instancias RDS nao tem multiAZ habilitado.
+    filters:
+      - Engine: mysql
+      - MultiAZ: false
+    actions:
+      - type: tag
+        key: c7n-guardrail-rds-mysql-without-multiAZ-enabled
+        value: "true" 
+
+# Validar se rds tem habilitado Auto Minor Version Upgrade #
+
+  - name: rds-check-AutoMinorVersionUpgrade-enabled
+    resource: rds
+    comment: Validar instancias RDS que nao tem Auto Minor Version Upgrade habilitado.
+    filters:
+      - Engine: mysql
+      - AutoMinorVersionUpgrade: false
+    actions:
+      - type: tag
+        key: c7n-guardrail-rds-mysql-without-multiAZ-enabled
+        value: "true" 
+        
+# Validar se rds foi configurado com usuarios tipo default #
+
+  - name: rds-check-default-user-enabled
+    resource: rds
+    comment: Validar instancias RDS que tem usuarios de padrão conhecido por hackers.
+    filters:
+      - Engine: mysql
+      - or:
+        - type: value
+          key: "MasterUsername"
+          op: in
+          value: [root, admin, administrator, administrador]
+    actions:
+      - type: tag
+        key: c7n-guardrail-rds-mysql-default-user-enabled
+        value: "true"
+
+# Validar se foram habilitados logs #
+
+  - name: rds-check-logs-enabled
+    resource: rds
+    comment: Monitorar instancias RDS que tem nao log habilitado.
+    filters:
+      - type: value
+        key: "Engine"
+        value: "mysql"
+      - or:
+        - type: value
+          key: EnabledCloudwatchLogsExports
+          value: audit
+        - type: value
+          key: EnabledCloudwatchLogsExports
+          value: error
+        - type: value
+          key: EnabledCloudwatchLogsExports
+          value: general
+        - type: value
+          key: EnabledCloudwatchLogsExports
+          value: slowquery
+    actions:
+      - type: tag
+        key: c7n-guardrail-rds-mysql-without-logs-enabled
+        value: "true"
