@@ -14,7 +14,6 @@ policies:
 
 ## Valida a criptografia em transito ##
 
-policies:
   - name: rds-without-transit-encryption
     resource: rds
     comment: Validar se armazenamento esta criptografado em transito
