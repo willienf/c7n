@@ -1,116 +1,649 @@
-## Valida a criptografia de disco ##
+## Guardrails - RDS:mysql#
 
 policies:
+
+## Criptografia de disco (OK) ##
+
   - name: rds-without-storage-encryption
     resource: rds
     comment: Validar se armazenamento esta criptografado
     filters:
-       - Engine: mysql
-       - StorageEncrypted: false
+      - tag:c7n-guardrail-rds-mysql-without-storage-encryption: absent
+      - type: value
+        key: Engine
+        value: mysql
+      - type: value
+        key: DBInstanceStatus
+        value: available
+      - type: value
+        key: StorageEncrypted
+        value: false
     actions:
       - type: tag
         key: c7n-guardrail-rds-mysql-without-storage-encryption
-        value: https://baseline-url
+        value: https://baseline-url/
 
-## Valida a criptografia em transito ##
+  - name: rds-without-storage-encryption-realtime
+    resource: rds
+    comment: Validar se armazenamento esta criptografado em real-time
+    mode:
+      type: cloudtrail
+      events:
+        - source: "rds.amazonaws.com"
+          event: CreateDBInstance
+          ids: "requestParameters.dBInstanceIdentifier"
+        - source: "rds.amazonaws.com"
+          event: ModifyDBInstance
+          ids: "requestParameters.dBInstanceIdentifier"
+        - source: "rds.amazonaws.com"
+          event: RemoveTagsFromResource
+          ids: "requestParameters.resourceName"
+        - source: "rds.amazonaws.com"
+          event: AddTagsToResource
+          ids: "requestParameters.resourceName"
+      role: arn:aws:iam::{account_id}:role/cloudcustodian-x-account-role
+      timeout: 200
+    filters:
+      - tag:c7n-guardrail-rds-mysql-without-storage-encryption: absent
+      - type: value
+        key: Engine
+        value: mysql
+      - type: value
+        key: DBInstanceStatus
+        value: available
+      - type: value
+        key: StorageEncrypted
+        value: false
+    actions:
+      - type: tag
+        key: c7n-guardrail-rds-mysql-without-storage-encryption
+        value: https://baseline-url/
 
-policies:
+  - name: rds-verify-without-storage-encryption-realtime
+    resource: rds
+    comment: Validar se armazenamento esta criptografado em real-time - remediacao.
+    mode:
+      type: cloudtrail
+      events:
+        - source: "rds.amazonaws.com"
+          event: CreateDBInstance
+          ids: "requestParameters.dBInstanceIdentifier"
+        - source: "rds.amazonaws.com"
+          event: ModifyDBInstance
+          ids: "requestParameters.dBInstanceIdentifier"
+        - source: "rds.amazonaws.com"
+          event: RemoveTagsFromResource
+          ids: "requestParameters.resourceName"
+        - source: "rds.amazonaws.com"
+          event: AddTagsToResource
+          ids: "requestParameters.resourceName"
+      role: arn:aws:iam::{account_id}:role/cloudcustodian-x-account-role
+      timeout: 200
+    filters:
+      - and:
+        - tag:c7n-guardrail-rds-mysql-without-storage-encryption: present
+        - type: value
+          key: Engine
+          value: mysql
+        - type: value
+          key: DBInstanceStatus
+          value: available
+        - type: value
+          key: StorageEncrypted
+          value: true
+    actions:
+      - type: remove-tag
+        tags: ["c7n-guardrail-rds-mysql-without-storage-encryption"]
+
+## Criptografia em transito (OK) ##
+
   - name: rds-without-transit-encryption
     resource: rds
     comment: Validar se armazenamento esta criptografado em transito
     filters:
-       - Engine: mysql
-       - type: value
-         key: CACertificateIdentifier
-         value: absent
+      - tag:c7n-guardrail-rds-mysql-without-transit-encryption: absent
+      - type: value
+        key: Engine
+        value: mysql
+      - type: value
+        key: DBInstanceStatus
+        value: available
+      - type: value
+        key: CACertificateIdentifier
+        value: absent
     actions:
       - type: tag
         key: c7n-guardrail-rds-mysql-without-transit-encryption
-        value: https://baseline-url
+        value: https://baseline-url/
 
+  - name: rds-without-transit-encryption-realtime
+    resource: rds
+    comment: Validar se armazenamento esta criptografado em transito real-time - remediacao
+    mode:
+      type: cloudtrail
+      events:
+        - source: "rds.amazonaws.com"
+          event: CreateDBInstance
+          ids: "requestParameters.dBInstanceIdentifier"
+      role: arn:aws:iam::{account_id}:role/cloudcustodian-x-account-role
+      timeout: 200
+    filters:
+      - tag:c7n-guardrail-rds-mysql-without-transit-encryption: absent
+      - type: value
+        key: Engine
+        value: mysql
+      - type: value
+        key: DBInstanceStatus
+        value: available
+      - type: value
+      - type: value
+        key: "CACertificateIdentifier"
+        value: absent
+    actions:
+      - type: tag
+        key: c7n-guardrail-rds-mysql-without-transit-encryption
+        value: https://baseline-url/
 
-## Acesso Público ##
+## Acesso Público (OK)##
 
   - name: rds-check-public-access
     resource: rds
     comment: Validar instancias RDS com acesso publico e aplicar tag.
     filters:
-       - Engine: mysql
-       - PubliclyAccessible: true
+      - tag:c7n-guardrail-rds-mysql-public-access: absent
+      - type: value
+        key: Engine
+        value: mysql
+      - type: value
+        key: DBInstanceStatus
+        value: available
+      - type: value
+        key: PubliclyAccessible
+        value: true
     actions:
       - type: tag
         key: c7n-guardrail-rds-mysql-public-access
-        value: https://baseline-url 
+        value: https://baseline-url/ 
 
-# Autenticacao por IAM #
+
+  - name: rds-check-public-access-realtime
+    resource: rds
+    comment: Validar instancias RDS com acesso publico e aplicar tag realtime.
+    mode:
+      type: periodic
+      schedule: "rate(5 minutes)"
+      role: arn:aws:iam::{account_id}:role/cloudcustodian-x-account-role
+    filters:
+      - and:
+        - tag:c7n-guardrail-rds-mysql-public-access: absent
+        - type: value
+          key: Engine
+          value: mysql
+        - type: value
+          key: DBInstanceStatus
+          value: available
+        - type: value
+          key: PubliclyAccessible
+          value: true
+    actions:
+      - type: tag
+        key: c7n-guardrail-rds-mysql-public-access
+        value: https://baseline-url/
+
+
+  - name: rds-verify-check-public-access-realtime
+    resource: rds
+    comment: Validar instancias RDS com acesso publico e aplicar tag realtime - remediacao.
+    mode:
+      type: periodic
+      schedule: "rate(5 minutes)"
+      role: arn:aws:iam::{account_id}:role/cloudcustodian-x-account-role
+    filters:
+      - and:
+        - tag:c7n-guardrail-rds-mysql-public-access: present
+        - type: value
+          key: Engine
+          value: mysql
+        - type: value
+          key: DBInstanceStatus
+          value: available
+        - type: value
+          key: PubliclyAccessible
+          value: false
+    actions:
+      - type: remove-tag
+        tags: ["c7n-guardrail-rds-mysql-public-access"]
+
+## Autenticacao por IAM (OK) ##
 
   - name: rds-check-iam-auth-enabled
     resource: rds
     comment: Validar instancias RDS que nao tem ativada autenticação por IAM.
     filters:
-       - Engine: mysql
-       - IAMDatabaseAuthenticationEnabled: false
+      - tag:c7n-guardrail-rds-mysql-without-iam-auth-enabled: absent
+      - Engine: mysql
+      - type: value
+        key: IAMDatabaseAuthenticationEnabled
+        value: false
     actions:
       - type: tag
         key: c7n-guardrail-rds-mysql-without-iam-auth-enabled
-        value: https://baseline-url 
+        value: https://baseline-url/ 
 
-# Validar se rds tem multiAZ #
+  - name: rds-check-iam-auth-enabled-realtime
+    resource: rds
+    comment: Validar instancias RDS que nao tem ativada autenticação por IAM, realtime.
+    mode:
+      type: cloudtrail
+      events:
+        - source: "rds.amazonaws.com"
+          event: CreateDBInstance
+          ids: "requestParameters.dBInstanceIdentifier"
+        - source: "rds.amazonaws.com"
+          event: ModifyDBInstance
+          ids: "requestParameters.dBInstanceIdentifier"
+        - source: "rds.amazonaws.com"
+          event: RemoveTagsFromResource
+          ids: "requestParameters.resourceName"
+        - source: "rds.amazonaws.com"
+          event: AddTagsToResource
+          ids: "requestParameters.resourceName"
+      role: arn:aws:iam::{account_id}:role/cloudcustodian-x-account-role
+      timeout: 200
+    filters:
+      - and:
+        - tag:c7n-guardrail-rds-mysql-without-iam-auth-enabled: absent
+        - type: value
+          key: Engine
+          value: mysql
+        - type: value
+          key: IAMDatabaseAuthenticationEnabled
+          value: false
+    actions:
+      - type: tag
+        key: c7n-guardrail-rds-mysql-without-iam-auth-enabled
+        value: https://baseline-url/
+
+  - name: rds-verify-check-iam-auth-enabled-realtime
+    resource: rds
+    comment: Validar instancias RDS que nao tem ativada autenticação por IAM realtime - remediacao.
+    mode:
+      type: cloudtrail
+      events:
+        - source: "rds.amazonaws.com"
+          event: CreateDBInstance
+          ids: "requestParameters.dBInstanceIdentifier"
+        - source: "rds.amazonaws.com"
+          event: ModifyDBInstance
+          ids: "requestParameters.dBInstanceIdentifier"
+        - source: "rds.amazonaws.com"
+          event: RemoveTagsFromResource
+          ids: "requestParameters.resourceName"
+        - source: "rds.amazonaws.com"
+          event: AddTagsToResource
+          ids: "requestParameters.resourceName"
+      role: arn:aws:iam::{account_id}:role/cloudcustodian-x-account-role
+      timeout: 200
+    filters:
+      - and:
+        - tag:c7n-guardrail-rds-mysql-without-iam-auth-enabled: present
+        - type: value
+          key: Engine
+          value: mysql
+        - type: value
+          key: IAMDatabaseAuthenticationEnabled
+          value: true
+    actions: 
+      - type: remove-tag
+        tags: ["c7n-guardrail-rds-mysql-without-iam-auth-enabled"]
+
+## Redundância/Failover - MultiAZ (OK) ##
 
   - name: rds-check-multiAZ-enabled
     resource: rds
     comment: Validar instancias RDS nao tem multiAZ habilitado.
     filters:
-       - Engine: mysql
-       - MultiAZ: false
+      - tag:c7n-guardrail-rds-mysql-without-multiAZ-enabled: absent
+      - type: value
+        key: Engine
+        value: mysql
+      - type: value
+        key: MultiAZ
+        value: false
+      - type: value
+        key: DBInstanceStatus
+        value: available
     actions:
       - type: tag
         key: c7n-guardrail-rds-mysql-without-multiAZ-enabled
-        value: https://baseline-url 
+        value: https://baseline-url/
 
-# Validar se rds tem habilitado Auto Minor Version Upgrade #
+  - name: rds-check-multiAZ-enabled-realtime
+    resource: rds
+    comment: Validar instancias RDS nao tem multiAZ habilitado em realtime.
+    mode:
+      type: periodic
+      schedule: "rate(5 minutes)"
+      role: arn:aws:iam::{account_id}:role/cloudcustodian-x-account-role
+    filters:
+      - and:
+        - tag:c7n-guardrail-rds-mysql-without-multiAZ-enabled: absent
+        - type: value
+          key: Engine
+          value: mysql
+        - type: value
+          key: MultiAZ
+          value: false
+        - type: value
+          key: DBInstanceStatus
+          value: available
+    actions:
+      - type: tag
+        key: c7n-guardrail-rds-mysql-without-multiAZ-enabled
+        value: https://baseline-url/      
 
-  - name: rds-check-AutoMinorVersionUpgrade-enabled
+  - name: rds-verify-check-multiAZ-enabled-realtime
+    resource: rds
+    comment: Validar instancias RDS nao tem multiAZ habilitado em realtime - remediacao.
+    mode:
+      type: periodic
+      schedule: "rate(5 minutes)"
+      role: arn:aws:iam::{account_id}:role/cloudcustodian-x-account-role
+    filters:
+      - and:
+        - tag:c7n-guardrail-rds-mysql-without-multiAZ-enabled: present
+        - type: value
+          key: Engine
+          value: mysql
+        - type: value
+          key: MultiAZ
+          value: true
+        - type: value
+          key: DBInstanceStatus
+          value: available
+    actions:
+      - type: remove-tag
+        tags: ["c7n-guardrail-rds-mysql-without-multiAZ-enabled"]
+
+## Auto Minor Version Upgrade (OK)##
+
+  - name: rds-AutoMinorVersionUpgrade-enabled 
     resource: rds
     comment: Validar instancias RDS que nao tem Auto Minor Version Upgrade habilitado.
     filters:
-       - Engine: mysql
-       - AutoMinorVersionUpgrade: false
+      - tag:c7n-guardrail-rds-AutoMinorVersionUpgrade-enabled: absent
+      - type: value
+        key: Engine
+        value: mysql
+      - type: value
+        key: DBInstanceStatus
+        value: available
+      - type: value
+        key: AutoMinorVersionUpgrade
+        value: false
     actions:
       - type: tag
-        key: c7n-guardrail-rds-mysql-without-multiAZ-enabled
-        value: https://baseline-url 
-        
-# Validar se rds foi configurado com usuarios tipo default #
+        key: c7n-guardrail-rds-AutoMinorVersionUpgrade-enabled
+        value: https://baseline-url/ 
 
-  - name: rds-check-default-user-enabled
+  - name: rds-AutoMinorVersionUpgrade-enabled-realtime
+    resource: rds
+    comment: Validar instancias RDS que nao tem Auto Minor Version Upgrade habilitado em realtime.
+    mode:
+      type: cloudtrail
+      events:
+        - source: "rds.amazonaws.com"
+          event: CreateDBInstance
+          ids: "requestParameters.dBInstanceIdentifier"
+        - source: "rds.amazonaws.com"
+          event: ModifyDBInstance
+          ids: "requestParameters.dBInstanceIdentifier"
+        - source: "rds.amazonaws.com"
+          event: RemoveTagsFromResource
+          ids: "requestParameters.resourceName"
+        - source: "rds.amazonaws.com"
+          event: AddTagsToResource
+          ids: "requestParameters.resourceName"
+      role: arn:aws:iam::{account_id}:role/cloudcustodian-x-account-role
+      timeout: 200
+    filters:
+        - tag:c7n-guardrail-rds-AutoMinorVersionUpgrade-enabled: absent
+        - type: value
+          key: Engine
+          value: mysql
+        - type: value
+          key: DBInstanceStatus
+          value: available
+        - type: value
+          key: AutoMinorVersionUpgrade
+          value: false
+    actions:
+      - type: tag
+        key: c7n-guardrail-rds-AutoMinorVersionUpgrade-enabled
+        value: https://baseline-url/
+
+  - name: rds-verify-AutoMinorVersionUpgrade-enabled-realtime
+    resource: rds
+    comment: Validar instancias RDS que nao tem Auto Minor Version Upgrade habilitado em realtime - remediacao.
+    mode:
+      type: cloudtrail
+      events:
+        - source: "rds.amazonaws.com"
+          event: CreateDBInstance
+          ids: "requestParameters.dBInstanceIdentifier"
+        - source: "rds.amazonaws.com"
+          event: ModifyDBInstance
+          ids: "requestParameters.dBInstanceIdentifier"
+        - source: "rds.amazonaws.com"
+          event: RemoveTagsFromResource
+          ids: "requestParameters.resourceName"
+        - source: "rds.amazonaws.com"
+          event: AddTagsToResource
+          ids: "requestParameters.resourceName"
+      role: arn:aws:iam::{account_id}:role/cloudcustodian-x-account-role
+      timeout: 200
+    filters:
+      - and:
+        - tag:c7n-guardrail-rds-AutoMinorVersionUpgrade-enabled: present
+        - type: value
+          key: Engine
+          value: mysql
+        - type: value
+          key: DBInstanceStatus
+          value: available
+        - type: value
+          key: AutoMinorVersionUpgrade
+          value: true
+    actions:
+      - type: remove-tag
+        tags: ["c7n-guardrail-rds-AutoMinorVersionUpgrade-enabled"]
+
+## Usuarios default (OK) ##
+
+  - name: rds-default-user-enabled
     resource: rds
     comment: Validar instancias RDS que tem usuarios de padrão conhecido por hackers.
     filters:
-       - Engine: mysql
-       - or:
-         - type: value
-           key: "MasterUsername"
-           op: in
-           value: [root, admin, administrator, administrador]
+      - tag:c7n-guardrail-rds-mysql-default-user-enabled: absent
+      - type: value
+        key: Engine
+        value: mysql
+      - type: value
+        key: DBInstanceStatus
+        value: available
+      - type: value
+        key: "MasterUsername"
+        op: in
+        value: [root, admin, administrator, administrador]
     actions:
       - type: tag
         key: c7n-guardrail-rds-mysql-default-user-enabled
-        value: https://baseline-url
+        value: https://baseline-url/
 
-# Validar se foram habilitados logs #
-
-  - name: rds-check-logs-enabled
+  - name: rds-default-user-enabled-realtime
     resource: rds
-    comment: Monitorar instancias RDS que tem nao log habilitado (audit+error+general+slowquery = 4).
+    comment: Validar instancias RDS que tem usuarios de padrão conhecido por hackers, em realtime.
+    mode:
+      type: cloudtrail
+      events:
+        - source: "rds.amazonaws.com"
+          event: CreateDBInstance
+          ids: "requestParameters.dBInstanceIdentifier"
+        - source: "rds.amazonaws.com"
+          event: RemoveTagsFromResource
+          ids: "requestParameters.resourceName"
+        - source: "rds.amazonaws.com"
+          event: AddTagsToResource
+          ids: "requestParameters.resourceName"
+      role: arn:aws:iam::{account_id}:role/cloudcustodian-x-account-role
+      timeout: 200
     filters:
-       - Engine: mysql
-       - not:
+      - and:
+        - tag:c7n-guardrail-rds-mysql-default-user-enabled: absent
+        - type: value
+          key: Engine
+          value: mysql
+        - type: value
+          key: DBInstanceStatus
+          value: available
+        - type: value
+          key: "MasterUsername"
+          op: in
+          value: [root, admin, administrator, administrador]
+    actions:
+      - type: tag
+        key: c7n-guardrail-rds-mysql-default-user-enabled
+        value: https://baseline-url/
+
+  - name: rds-verify-default-user-enabled-realtime
+    resource: rds
+    comment: Validar instancias RDS que tem usuarios de padrão conhecido por hackers, em realtime - remediação.
+    mode:
+      type: cloudtrail
+      events:
+        - source: "rds.amazonaws.com"
+          event: CreateDBInstance
+          ids: "requestParameters.dBInstanceIdentifier"
+        - source: "rds.amazonaws.com"
+          event: RemoveTagsFromResource
+          ids: "requestParameters.resourceName"
+        - source: "rds.amazonaws.com"
+          event: AddTagsToResource
+          ids: "requestParameters.resourceName"
+      role: arn:aws:iam::{account_id}:role/cloudcustodian-x-account-role
+      timeout: 200
+    filters:
+      - and:
+        - tag:c7n-guardrail-rds-mysql-default-user-enabled: present
+        - type: value
+          key: Engine
+          value: mysql
+        - type: value
+          key: DBInstanceStatus
+          value: available
+        - not:
           - type: value
-            key: EnabledCloudwatchLogsExports[*]
-            value_type: size
-            value: 4
+            key: "MasterUsername"
+            op: in
+            value: [root, admin, administrator, administrador]
+    actions:
+      - type: remove-tag
+        tags: ["c7n-guardrail-rds-mysql-default-user-enabled"]
+
+## Logs habilitados (audit,error,general,slowquery) (OK) ##
+
+  - name: rds-without-mysql-logs-enabled
+    resource: rds
+    comment: Monitorar instancias RDS que nao tem log habilitado em realtime (audit+error+general+slowquery = 4).
+    filters:
+      - tag:c7n-guardrail-rds-mysql-without-logs-enabled: absent
+      - type: value
+        key: Engine
+        value: mysql
+      - type: value
+        key: DBInstanceStatus
+        value: available
+      - not:
+         - type: value
+           key: EnabledCloudwatchLogsExports[*]
+           value_type: size
+           value: 4
     actions:
       - type: tag
         key: c7n-guardrail-rds-mysql-without-logs-enabled
-        value: https://baseline-url
+        value: https://baseline-url/
+
+  - name: rds-mysql-logs-enabled-realtime
+    resource: rds
+    comment: Monitorar instancias RDS que nao tem log habilitado em realtime (audit+error+general+slowquery = 4).
+    mode:
+      type: cloudtrail
+      events:
+        - source: "rds.amazonaws.com"
+          event: CreateDBInstance
+          ids: "requestParameters.dBInstanceIdentifier"
+        - source: "rds.amazonaws.com"
+          event: ModifyDBInstance
+          ids: "requestParameters.dBInstanceIdentifier"
+        - source: "rds.amazonaws.com"
+          event: RemoveTagsFromResource
+          ids: "requestParameters.resourceName"
+        - source: "rds.amazonaws.com"
+          event: AddTagsToResource
+          ids: "requestParameters.resourceName"
+      role: arn:aws:iam::{account_id}:role/cloudcustodian-x-account-role
+      timeout: 200
+    filters:
+      - tag:c7n-guardrail-rds-mysql-without-logs-enabled: absent
+      - type: value
+        key: Engine
+        value: mysql
+      - type: value
+        key: DBInstanceStatus
+        value: available
+      - not:
+         - type: value
+           key: EnabledCloudwatchLogsExports[*]
+           value_type: size
+           value: 4
+    actions:
+      - type: tag
+        key: c7n-guardrail-rds-mysql-without-logs-enabled
+        value: https://baseline-url/
+
+  - name: rds-verify-mysql-logs-enabled-realtime
+    resource: rds
+    comment: Monitorar instancias RDS que nao tem log habilitado em realtime (audit+error+general+slowquery = 4) - remediacao.
+    mode:
+      type: cloudtrail
+      events:
+        - source: "rds.amazonaws.com"
+          event: CreateDBInstance
+          ids: "requestParameters.dBInstanceIdentifier"
+        - source: "rds.amazonaws.com"
+          event: ModifyDBInstance
+          ids: "requestParameters.dBInstanceIdentifier"
+        - source: "rds.amazonaws.com"
+          event: RemoveTagsFromResource
+          ids: "requestParameters.resourceName"
+        - source: "rds.amazonaws.com"
+          event: AddTagsToResource
+          ids: "requestParameters.resourceName"
+      role: arn:aws:iam::{account_id}:role/cloudcustodian-x-account-role
+      timeout: 200
+    filters:
+      - and:
+        - tag:c7n-guardrail-rds-mysql-without-logs-enabled: present 
+        - type: value
+          key: Engine
+          value: mysql
+        - type: value
+          key: EnabledCloudwatchLogsExports[*]
+          value_type: size
+          value: 4
+        - type: value
+          key: DBInstanceStatus
+          value: available
+    actions:
+      - type: remove-tag
+        tags: ["c7n-guardrail-rds-mysql-without-logs-enabled"]

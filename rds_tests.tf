@@ -7,7 +7,7 @@ provider "aws" {
 # VARIABLES
 variable "subnet_ids" {
   type    = "list"
-  default = ["subnet-09483190d6bc97dc6", "subnet-0c508167ef5ac336c", "subnet-038a47c68589c7472"]
+  default = ["subnet-0f41747762f76f48a", "subnet-0fa9855a06170a65e", "subnet-06acec3a24ae1c868"]
 }
 
 
